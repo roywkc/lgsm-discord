@@ -36,16 +36,17 @@ allowed = []
 for value in config.get('DEFAULT','ALLOWED').split(','):
     allowed.append(value)
 
-remove_from_output = ['[K','32m','[0m']
+remove_from_output = ['[K','32m','[0m', '93m', '36m', '92m', '\\x1b', '94m']
 
-def directcommand(command, sender, channel):
-    command = command.replace(GAMESERVER+' ','')
-    if command == 'details':
-        command = 'postdetails'
-    elif command == 'update':
-        command = 'force-update'
+def directcommand(command):
+    #if command == 'details':
+    #    command = 'postdetails'
+
+    #elif command == 'update':
+    #    command = 'force-update'
 
     try:
+        print('inside directcommand')
         output = subprocess.run('/home/'+GAMESERVER+'/'+GAMESERVER+' "'+command+'"', shell=True,stdout=subprocess.PIPE,universal_newlines=True)
         output = str(output.stdout)
         for t in remove_from_output:
@@ -57,97 +58,86 @@ def directcommand(command, sender, channel):
 def is_command(m):
     return m.content.startswith(BOT_PREFIX)
 
-@client.event
-async def on_message(message):
-    # we overwrite the default here to check command levels
-    if message.content.startswith(BOT_PREFIX):
-        await client.process_commands(message)
 
-@client.group(pass_context=True,name=GAMESERVER)
-async def gameserver_command(context):
-    if context.invoked_subcommand is None:
-        await client.say('Invalid command passed...')
-
-@gameserver_command.command(pass_context=True, name="start")
+@client.command(pass_context=True, name="start")
 async def start_command(context):
-    await client.delete_message(context.message)
     if str(context.message.channel) in allowed:
+        await context.send("Starting.. this may take a minute or two..")
         print('Content: ['+str(context.message.content[1:])+'] Author: ['+str(context.message.author)+'] Channel: ['+str(context.message.channel)+']')
-        em = discord.Embed(title=context.message.content[1:],description=directcommand(context.message.content[1:],context.message.author,context.message.channel))
-        em.set_author(name=context.message.author,icon_url=client.user.default_avatar_url)
-        await client.send_message(context.message.channel,embed=em) # we pass the context so we can have all the commands in help
+        output = directcommand("start")
+        await context.send(output)
     else:
         await client.say("The channel ("+str(context.message.channel)+") does not have permission to run commands. Please refrain from trying.")
 
 
-@gameserver_command.command(pass_context=True, name="stop")
+@client.command(pass_context=True, name="stop")
 async def stop_command(context):
-    await client.delete_message(context.message)
     if str(context.message.channel) in allowed:
         print('Content: ['+str(context.message.content[1:])+'] Author: ['+str(context.message.author)+'] Channel: ['+str(context.message.channel)+']')
-        em = discord.Embed(title=context.message.content[1:],description=directcommand(context.message.content[1:],context.message.author,context.message.channel))
-        em.set_author(name=context.message.author,icon_url=client.user.default_avatar_url)
-        await client.send_message(context.message.channel,embed=em) # we pass the context so we can have all the commands in help
+        await context.send("Stopping.. this may take a minute or two..")
+        output = directcommand("stop")
+        await context.send(output)
     else:
         await client.say("The channel ("+str(context.message.channel)+") does not have permission to run commands. Please refrain from trying.")
 
-@gameserver_command.command(pass_context=True, name="restart")
-async def restart_command(context):
-    await client.delete_message(context.message)
+@client.command()
+async def restart(context):
     if str(context.message.channel) in allowed:
-        print('Content: ['+str(context.message.content[1:])+'] Author: ['+str(context.message.author)+'] Channel: ['+str(context.message.channel)+']')
-        em = discord.Embed(title=context.message.content[1:],description=directcommand(context.message.content[1:],context.message.author,context.message.channel))
-        em.set_author(name=context.message.author,icon_url=client.user.default_avatar_url)
-        await client.send_message(context.message.channel,embed=em) # we pass the context so we can have all the commands in help
+        print('Content: ['+str(context.message.content[1:])+'] Author: ['+str(context.message.author)+'] Channel: ['+str(context.message.channel)+']') 
+        await context.send("Restarting.. this may take a minute or two..")
+        output = directcommand("restart")
+        await context.send(output)
     else:
         await client.say("The channel ("+str(context.message.channel)+") does not have permission to run commands. Please refrain from trying.")
 
-@gameserver_command.command(pass_context=True, name="details")
-async def details_command(context):
-    await client.delete_message(context.message)
+@client.command()
+async def details(context):
     if str(context.message.channel) in allowed:
         print('Content: ['+str(context.message.content[1:])+'] Author: ['+str(context.message.author)+'] Channel: ['+str(context.message.channel)+']')
-        em = discord.Embed(title=context.message.content[1:],description=directcommand(context.message.content[1:],context.message.author,context.message.channel))
-        em.set_author(name=context.message.author,icon_url=client.user.default_avatar_url)
-        await client.send_message(context.message.channel,embed=em) # we pass the context so we can have all the commands in help
-    else:
-        await client.say("The channel ("+str(context.message.channel)+") does not have permission to run commands. Please refrain from trying.")
+        output = directcommand("details")
+        
+        await context.send(output.split("Command-line Parameters")[1]) # we pass the context so we can have all the commands in help
 
-@gameserver_command.command(pass_context=True, name="update")
+    else:
+        await context.send("The channel ("+str(context.message.channel)+") does not have permission to run commands. Please refrain from trying.")
+
+@client.command(pass_context=True, name="update")
 async def update_command(context):
     await client.delete_message(context.message)
     if str(context.message.channel) in allowed:
         print('Content: ['+str(context.message.content[1:])+'] Author: ['+str(context.message.author)+'] Channel: ['+str(context.message.channel)+']')
-        em = discord.Embed(title=context.message.content[1:],description=directcommand(context.message.content[1:],context.message.author,context.message.channel))
-        em.set_author(name=context.message.author,icon_url=client.user.default_avatar_url)
-        await client.send_message(context.message.channel,embed=em) # we pass the context so we can have all the commands in help
+        output = directcommand("update")
+        await context.send(output) # we pass the context so we can have all the commands in help
     else:
         await client.say("The channel ("+str(context.message.channel)+") does not have permission to run commands. Please refrain from trying.")
 
-@gameserver_command.command(pass_context=True, name="validate")
-async def validate_command(context):
-    await client.delete_message(context.message)
-    if str(context.message.channel) in allowed:
-        print('Content: ['+str(context.message.content[1:])+'] Author: ['+str(context.message.author)+'] Channel: ['+str(context.message.channel)+']')
-        em = discord.Embed(title=context.message.content[1:],description=directcommand(context.message.content[1:],context.message.author,context.message.channel))
-        em.set_author(name=context.message.author,icon_url=client.user.default_avatar_url)
-        await client.send_message(context.message.channel,embed=em) # we pass the context so we can have all the commands in help
-    else:
-        await client.say("The channel ("+str(context.message.channel)+") does not have permission to run commands. Please refrain from trying.")
-
-@client.command(pass_context=True,name="stats")
-async def stats(context):
+@client.command()
+async def botstats(context):
     process = psutil.Process()
     msg = "Bot stats\nCPU: "+str(process.cpu_percent())+"%\nRam: "+str(process.memory_percent())+"%"
-    em = discord.Embed(title=context.message.content[1:],description=msg)
-    em.set_author(name=context.message.author,icon_url=client.user.default_avatar_url)
-    await client.send_message(context.message.channel,embed=em)
+    await context.send(msg)
 
-@client.command(name="clean",pass_context=True)
-async def clean(context):
-    deleted = await client.purge_from(context.message.channel,limit=1000,check=is_command)
-    await client.send_message(context.message.channel,'Deleted {} message(s)'.format(len(deleted)))
 
+@client.command(name="joke", pass_context=True)
+async def joke(context):
+    jokes = [
+        "I can't wait to see the sunset in your hole",
+        "Big Booties never looked the same",
+        "The emporium finds your penis lacking",
+        "Julian is not funny",
+        "Have you met... Daniel from Talon?",
+        "Khurram hangs out with dead rats",
+        "Dave and Billy needs more Nords",
+        "Ruben hunts for tentacles, thats why his house is on the water",
+        "Put the nood in your mouth. NOW!"
+            ]
+    await context.send(jokes[random.randint(0,len(jokes))])
+
+
+@client.event
+async def on_command_error(ctx, error):
+        if isinstance(error, discord.ext.commands.errors.CommandNotFound): # or discord.ext.commands.errors.CommandNotFound as you wrote
+                    await ctx.send("The Raven could not understand that command")
 
 @client.event
 async def on_ready():
